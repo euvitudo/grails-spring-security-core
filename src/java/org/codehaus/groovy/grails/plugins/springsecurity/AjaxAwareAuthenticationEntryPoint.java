@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.util.Assert;
 
 /**
@@ -27,12 +28,19 @@ import org.springframework.util.Assert;
 public class AjaxAwareAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
 
 	private String ajaxLoginFormUrl;
+	private RequestCache _requestCache;
+	
+	public AjaxAwareAuthenticationEntryPoint(final String loginFormUrl, final RequestCache requestCache) {
+		super(loginFormUrl);
+		System.err.println("RequestCache: " + requestCache);
+		_requestCache = requestCache;
+	}
 
 	@Override
 	protected String determineUrlToUseForThisRequest(final HttpServletRequest request,
 			final HttpServletResponse response, final AuthenticationException e) {
 
-		if (ajaxLoginFormUrl != null && SpringSecurityUtils.isAjax(request)) {
+		if (ajaxLoginFormUrl != null && SpringSecurityUtils.isAjax(_requestCache, request, response)) {
 			return ajaxLoginFormUrl;
 		}
 
@@ -47,4 +55,13 @@ public class AjaxAwareAuthenticationEntryPoint extends LoginUrlAuthenticationEnt
 		Assert.isTrue(url == null || url.startsWith("/"), "ajaxLoginFormUrl must begin with '/'");
 		ajaxLoginFormUrl = url;
 	}
+	
+	/**
+	 * {@inheritDoc}
+	 * @see org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler#setRequestCache(
+	 * 	org.springframework.security.web.savedrequest.RequestCache)
+	 */
+	public void setRequestCache(RequestCache requestCache) {
+	}
+
 }

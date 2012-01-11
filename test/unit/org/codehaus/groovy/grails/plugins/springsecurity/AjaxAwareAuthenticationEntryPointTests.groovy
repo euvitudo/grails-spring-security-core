@@ -17,6 +17,7 @@ package org.codehaus.groovy.grails.plugins.springsecurity
 import org.codehaus.groovy.grails.commons.ConfigurationHolder as CH
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache
 
 /**
  * Unit tests for WithAjaxAuthenticationProcessingFilterEntryPoint.
@@ -25,7 +26,7 @@ import org.springframework.mock.web.MockHttpServletResponse
  */
 class AjaxAwareAuthenticationEntryPointTests extends GroovyTestCase {
 
-	private final _entryPoint = new AjaxAwareAuthenticationEntryPoint()
+	private _entryPoint
 	private final _application = new FakeApplication()
 
 	private String _loginFormUrl = '/loginFormUrl'
@@ -38,8 +39,8 @@ class AjaxAwareAuthenticationEntryPointTests extends GroovyTestCase {
 	@Override
 	protected void setUp() {
 		super.setUp()
+		_entryPoint = new AjaxAwareAuthenticationEntryPoint(_loginFormUrl, new HttpSessionRequestCache())
 		_entryPoint.useForward = true
-		_entryPoint.loginFormUrl = _loginFormUrl
 		_entryPoint.ajaxLoginFormUrl = _ajaxLoginFormUrl
 		ReflectionUtils.application = _application
 		ReflectionUtils.setConfigProperty 'ajaxHeader', SpringSecurityUtils.AJAX_HEADER

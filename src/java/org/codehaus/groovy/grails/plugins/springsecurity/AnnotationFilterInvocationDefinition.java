@@ -25,23 +25,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.lang.WordUtils;
+import org.apache.log4j.Logger;
 import org.codehaus.groovy.grails.commons.ControllerArtefactHandler;
 import org.codehaus.groovy.grails.commons.GrailsApplication;
 import org.codehaus.groovy.grails.commons.GrailsClass;
 import org.codehaus.groovy.grails.commons.GrailsControllerClass;
-import org.codehaus.groovy.grails.web.context.ServletContextHolder;
 import org.codehaus.groovy.grails.web.mapping.UrlMappingInfo;
 import org.codehaus.groovy.grails.web.mapping.UrlMappingsHolder;
 import org.codehaus.groovy.grails.web.servlet.mvc.GrailsParameterMap;
 import org.codehaus.groovy.grails.web.servlet.mvc.GrailsWebRequest;
-import org.codehaus.groovy.grails.web.util.WebUtils;
 import org.springframework.security.access.ConfigAttribute;
-import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.access.intercept.FilterInvocationSecurityMetadataSource;
+import org.springframework.security.web.util.RequestMatcher;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -58,51 +54,10 @@ public class AnnotationFilterInvocationDefinition extends AbstractFilterInvocati
 			grails.plugins.springsecurity.Secured.class.getName(),
 			org.springframework.security.access.annotation.Secured.class.getName());
 
+	protected final static Logger _log = Logger.getLogger(AnnotationFilterInvocationDefinition.class);
+			
 	private UrlMappingsHolder _urlMappingsHolder;
 	private GrailsApplication _application;
-
-	@Override
-	protected String determineUrl(final FilterInvocation filterInvocation) {
-		HttpServletRequest request = filterInvocation.getHttpRequest();
-		HttpServletResponse response = filterInvocation.getHttpResponse();
-
-		GrailsWebRequest existingRequest = WebUtils.retrieveGrailsWebRequest();
-
-		String requestUrl = request.getRequestURI().substring(request.getContextPath().length());
-
-		String url = null;
-		try {
-			GrailsWebRequest grailsRequest = new GrailsWebRequest(request, response,
-					ServletContextHolder.getServletContext());
-			WebUtils.storeGrailsWebRequest(grailsRequest);
-
-			Map<String, Object> savedParams = copyParams(grailsRequest);
-
-			for (UrlMappingInfo mapping : _urlMappingsHolder.matchAll(requestUrl)) {
-				configureMapping(mapping, grailsRequest, savedParams);
-
-				url = findGrailsUrl(mapping);
-				if (url != null) {
-					break;
-				}
-			}
-		}
-		finally {
-			if (existingRequest == null) {
-				WebUtils.clearGrailsWebRequest();
-			}
-			else {
-				WebUtils.storeGrailsWebRequest(existingRequest);
-			}
-		}
-
-		if (!StringUtils.hasLength(url)) {
-			// probably css/js/image
-			url = requestUrl;
-		}
-
-		return lowercaseAndStripQuerystring(url);
-	}
 
 	protected String findGrailsUrl(final UrlMappingInfo mapping) {
 
@@ -238,10 +193,9 @@ public class AnnotationFilterInvocationDefinition extends AbstractFilterInvocati
 
 		Collection<ConfigAttribute> configAttributes = buildConfigAttributes(tokens);
 
-		Object key = getUrlMatcher().compile(fullPattern);
-		Collection<ConfigAttribute> replaced = storeMapping(key, configAttributes);
+		Collection<ConfigAttribute> replaced = storeMapping(fullPattern, configAttributes);
 		if (replaced != null) {
-			_log.warn("replaced rule for '" + key + "' with tokens " + replaced
+			_log.warn("replaced rule for '" + fullPattern + "' with tokens " + replaced
 					+ " with tokens " + configAttributes);
 		}
 	}

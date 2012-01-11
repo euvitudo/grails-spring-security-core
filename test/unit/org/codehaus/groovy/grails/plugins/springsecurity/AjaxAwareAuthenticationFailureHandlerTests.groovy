@@ -19,6 +19,7 @@ import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.web.RedirectStrategy
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache
 
 /**
  * @author <a href='mailto:burt@burtbeckwith.com'>Burt Beckwith</a>
@@ -32,7 +33,8 @@ class AjaxAwareAuthenticationFailureHandlerTests extends GroovyTestCase {
 		String defaultFailureUrl = '/defaultFailureUrl'
 		_handler.defaultFailureUrl = defaultFailureUrl
 		_handler.ajaxAuthenticationFailureUrl = '/ajaxAuthenticationFailureUrl'
-
+		_handler.requestCache = new HttpSessionRequestCache()
+		
 		boolean redirectCalled = false
 		def sendRedirect = { req, res, url ->
 			redirectCalled = true
@@ -54,7 +56,8 @@ class AjaxAwareAuthenticationFailureHandlerTests extends GroovyTestCase {
 		String ajaxAuthenticationFailureUrl = '/ajaxAuthenticationFailureUrl'
 		_handler.defaultFailureUrl = '/defaultFailureUrl'
 		_handler.ajaxAuthenticationFailureUrl = ajaxAuthenticationFailureUrl
-
+		_handler.requestCache = new HttpSessionRequestCache()
+		
 		boolean redirectCalled = false
 		def sendRedirect = { req, res, url ->
 			redirectCalled = true

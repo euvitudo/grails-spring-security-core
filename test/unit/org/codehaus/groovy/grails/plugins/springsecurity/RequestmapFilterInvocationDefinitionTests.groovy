@@ -24,7 +24,7 @@ import org.springframework.security.access.vote.AuthenticatedVoter
 import org.springframework.security.access.vote.RoleVoter
 import org.springframework.security.web.FilterInvocation
 import org.springframework.security.web.access.expression.DefaultWebSecurityExpressionHandler
-import org.springframework.security.web.util.AntUrlPathMatcher
+import org.springframework.security.web.util.AntPathRequestMatcher;
 
 /**
  * Unit tests for RequestmapFilterInvocationDefinition.
@@ -83,17 +83,17 @@ class RequestmapFilterInvocationDefinitionTests extends GrailsUnitTestCase {
 //	}
 
 	void testAfterPropertiesSet() {
-		assertEquals 'url matcher is required', shouldFail(IllegalArgumentException) {
+		assertEquals 'requestMatcherClass is required', shouldFail(IllegalArgumentException) {
 			_fid.afterPropertiesSet()
 		}
 
-		_fid.urlMatcher = new AntUrlPathMatcher()
+		_fid.requestMatcherClass = AntPathRequestMatcher
 
 		_fid.afterPropertiesSet()
 	}
 
 	void testStoreMapping() {
-		_fid.urlMatcher = new AntUrlPathMatcher()
+		_fid.requestMatcherClass = AntPathRequestMatcher
 
 		assertEquals 0, _fid.configAttributeMap.size()
 
@@ -109,7 +109,7 @@ class RequestmapFilterInvocationDefinitionTests extends GrailsUnitTestCase {
 
 	void testReset() {
 		_fid = new TestRequestmapFilterInvocationDefinition()
-		_fid.urlMatcher = new AntUrlPathMatcher()
+		_fid.requestMatcherClass = AntPathRequestMatcher
 		_fid.roleVoter = new RoleVoter()
 		_fid.authenticatedVoter = new AuthenticatedVoter()
 		_fid.expressionHandler = new DefaultWebSecurityExpressionHandler()
@@ -123,7 +123,7 @@ class RequestmapFilterInvocationDefinitionTests extends GrailsUnitTestCase {
 
 	void testInitialize() {
 		_fid = new TestRequestmapFilterInvocationDefinition()
-		_fid.urlMatcher = new AntUrlPathMatcher()
+		_fid.requestMatcherClass = AntPathRequestMatcher
 		_fid.roleVoter = new RoleVoter()
 		_fid.authenticatedVoter = new AuthenticatedVoter()
 		_fid.expressionHandler = new DefaultWebSecurityExpressionHandler()
@@ -137,21 +137,6 @@ class RequestmapFilterInvocationDefinitionTests extends GrailsUnitTestCase {
 
 		_fid.initialize()
 		assertEquals 0, _fid.configAttributeMap.size()
-	}
-
-	void testDetermineUrl() {
-		_fid.urlMatcher = new AntUrlPathMatcher()
-
-		def request = new MockHttpServletRequest()
-		def response = new MockHttpServletResponse()
-		def chain = new MockFilterChain()
-		request.contextPath = '/context'
-
-		request.requestURI = '/context/foo'
-		assertEquals '/foo', _fid.determineUrl(new FilterInvocation(request, response, chain))
-
-		request.requestURI = '/context/fOo/Bar?x=1&y=2'
-		assertEquals '/foo/bar', _fid.determineUrl(new FilterInvocation(request, response, chain))
 	}
 
 	void testSupports() {

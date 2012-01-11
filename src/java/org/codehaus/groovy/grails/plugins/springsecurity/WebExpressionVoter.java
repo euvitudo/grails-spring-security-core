@@ -20,9 +20,9 @@ import org.springframework.expression.EvaluationContext;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.ConfigAttribute;
 import org.springframework.security.access.expression.ExpressionUtils;
+import org.springframework.security.access.expression.SecurityExpressionHandler;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.FilterInvocation;
-import org.springframework.security.web.access.expression.WebSecurityExpressionHandler;
 import org.springframework.util.Assert;
 
 /**
@@ -31,20 +31,21 @@ import org.springframework.util.Assert;
  *
  * @author <a href='mailto:burt@burtbeckwith.com'>Burt Beckwith</a>
  */
-public class WebExpressionVoter implements AccessDecisionVoter {
+public class WebExpressionVoter implements AccessDecisionVoter<FilterInvocation> {
 
-	private WebSecurityExpressionHandler _expressionHandler;
+	private SecurityExpressionHandler<FilterInvocation> _expressionHandler;
 
 	/**
 	 * {@inheritDoc}
 	 * @see org.springframework.security.access.AccessDecisionVoter#vote(
 	 * 	org.springframework.security.core.Authentication, java.lang.Object, java.util.Collection)
 	 */
-	public int vote(final Authentication authentication, final Object object,
+	@Override
+	public int vote(final Authentication authentication, final FilterInvocation filterInvocation,
 			final Collection<ConfigAttribute> attributes) {
 
 		Assert.notNull(authentication, "authentication cannot be null");
-		Assert.notNull(object, "object cannot be null");
+		Assert.notNull(filterInvocation, "filterInvocation cannot be null");
 		Assert.notNull(attributes, "attributes cannot be null");
 
 		WebExpressionConfigAttribute weca = findConfigAttribute(attributes);
@@ -52,8 +53,7 @@ public class WebExpressionVoter implements AccessDecisionVoter {
 			return ACCESS_ABSTAIN;
 		}
 
-		FilterInvocation fi = (FilterInvocation)object;
-		EvaluationContext ctx = _expressionHandler.createEvaluationContext(authentication, fi);
+		EvaluationContext ctx = _expressionHandler.createEvaluationContext(authentication, filterInvocation);
 
 		return ExpressionUtils.evaluateAsBoolean(weca.getAuthorizeExpression(), ctx) ?
 				ACCESS_GRANTED : ACCESS_DENIED;
@@ -89,7 +89,8 @@ public class WebExpressionVoter implements AccessDecisionVoter {
 	 * Dependency injection for the expression handler.
 	 * @param expressionHandler the handler
 	 */
-	public void setExpressionHandler(final WebSecurityExpressionHandler expressionHandler) {
+	public void setExpressionHandler(final SecurityExpressionHandler<FilterInvocation> expressionHandler) {
 		_expressionHandler = expressionHandler;
 	}
+
 }

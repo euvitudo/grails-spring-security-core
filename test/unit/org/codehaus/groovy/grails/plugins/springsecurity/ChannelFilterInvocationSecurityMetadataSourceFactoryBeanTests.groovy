@@ -15,7 +15,7 @@
 package org.codehaus.groovy.grails.plugins.springsecurity
 
 import org.springframework.security.web.access.intercept.DefaultFilterInvocationSecurityMetadataSource
-import org.springframework.security.web.util.AntUrlPathMatcher
+import org.springframework.security.web.util.AntPathRequestMatcher;
 
 /**
  * @author <a href='mailto:burt@burtbeckwith.com'>Burt Beckwith</a>
@@ -37,7 +37,7 @@ class ChannelFilterInvocationSecurityMetadataSourceFactoryBeanTests extends Groo
 			_factory.afterPropertiesSet()
 		}
 
-		_factory.urlMatcher = new AntUrlPathMatcher()
+		_factory.requestMatcherClass = AntPathRequestMatcher
 		shouldFail(IllegalArgumentException) {
 			_factory.afterPropertiesSet()
 		}
@@ -52,7 +52,7 @@ class ChannelFilterInvocationSecurityMetadataSourceFactoryBeanTests extends Groo
 	}
 
 	void testGetObject() {
-		_factory.urlMatcher = new AntUrlPathMatcher()
+		_factory.requestMatcherClass = AntPathRequestMatcher
 		_factory.definition = ['/foo1/**': 'REQUIRES_SECURE_CHANNEL',
 		                       '/foo2/**': 'REQUIRES_INSECURE_CHANNEL',
 		                       '/foo3/**': 'ANY_CHANNEL']
@@ -60,9 +60,9 @@ class ChannelFilterInvocationSecurityMetadataSourceFactoryBeanTests extends Groo
 
 		def object = _factory.object
 		assertTrue object instanceof DefaultFilterInvocationSecurityMetadataSource
-		def map = object.@httpMethodMap
-		assertEquals 'REQUIRES_SECURE_CHANNEL',   map.get(null).get('/foo1/**').attribute[0]
-		assertEquals 'REQUIRES_INSECURE_CHANNEL', map.get(null).get('/foo2/**').attribute[0]
-		assertEquals 'ANY_CHANNEL',               map.get(null).get('/foo3/**').attribute[0]
+		def map = object.requestMap
+		assertEquals 'REQUIRES_SECURE_CHANNEL',   map.get(new AntPathRequestMatcher('/foo1/**')).get(0).attribute
+		assertEquals 'REQUIRES_INSECURE_CHANNEL', map.get(new AntPathRequestMatcher('/foo2/**')).get(0).attribute
+		assertEquals 'ANY_CHANNEL',               map.get(new AntPathRequestMatcher('/foo3/**')).get(0).attribute
 	}
 }

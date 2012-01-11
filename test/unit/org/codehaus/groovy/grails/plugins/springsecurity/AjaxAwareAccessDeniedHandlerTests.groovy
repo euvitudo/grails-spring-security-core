@@ -22,6 +22,7 @@ import org.springframework.security.authentication.RememberMeAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder as SCH
 import org.springframework.security.web.PortResolverImpl
 import org.springframework.security.web.savedrequest.DefaultSavedRequest
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache
 
 /**
  * @author <a href='mailto:burt@burtbeckwith.com'>Burt Beckwith</a>
@@ -30,6 +31,7 @@ class AjaxAwareAccessDeniedHandlerTests extends GroovyTestCase {
 
 	private final _handler = new AjaxAwareAccessDeniedHandler()
 	private final _application = new FakeApplication()
+	private final _requestCache = new HttpSessionRequestCache()
 
 	/**
 	 * {@inheritDoc}
@@ -42,6 +44,7 @@ class AjaxAwareAccessDeniedHandlerTests extends GroovyTestCase {
 		_handler.ajaxErrorPage = '/ajaxFail'
 		_handler.portResolver = new PortResolverImpl()
 		_handler.authenticationTrustResolver = new AuthenticationTrustResolverImpl()
+		_handler.requestCache = _requestCache
 		ReflectionUtils.application = _application
 		ReflectionUtils.setConfigProperty 'ajaxHeader', SpringSecurityUtils.AJAX_HEADER
 	}
@@ -52,9 +55,9 @@ class AjaxAwareAccessDeniedHandlerTests extends GroovyTestCase {
 
 		SCH.context.authentication = new RememberMeAuthenticationToken('username', 'password', null)
 
-		assertNull request.session.getAttribute(DefaultSavedRequest.SPRING_SECURITY_SAVED_REQUEST_KEY)
+		assertNull _requestCache.getRequest(request, response)
 		_handler.handle request, response, new AccessDeniedException('fail')
-		assertNotNull request.session.getAttribute(DefaultSavedRequest.SPRING_SECURITY_SAVED_REQUEST_KEY)
+		assertNotNull _requestCache.getRequest(request, response)
 
 		assertEquals 'http://localhost/fail', response.redirectedUrl
 	}

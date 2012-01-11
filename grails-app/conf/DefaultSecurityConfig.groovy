@@ -86,7 +86,7 @@ security {
 	// successHandler
 	successHandler.defaultTargetUrl = '/'
 	successHandler.alwaysUseDefault = false
-	successHandler.targetUrlParameter = ATRH.DEFAULT_TARGET_PARAMETER // 'spring-security-redirect'
+	successHandler.targetUrlParameter = 'spring-security-redirect' // was ATRH.DEFAULT_TARGET_PARAMETER, but that was removed
 	successHandler.useReferer = false
 	successHandler.ajaxSuccessUrl = '/login/ajaxSuccess'
 
@@ -98,7 +98,7 @@ security {
 	redirectStrategy.contextRelative = false
 
 	// authenticationDetails
-	authenticationDetails.authClass = WebAuthenticationDetails
+//	authenticationDetails.authClass = WebAuthenticationDetails
 
 	// session fixation prevention
 	useSessionFixationPrevention = false
@@ -189,9 +189,6 @@ security {
 	switchUser.exitUserUrl = '/j_spring_security_exit_user'
 	switchUser.targetUrl = null // use the authenticationSuccessHandler
 	switchUser.switchFailureUrl = null // use the authenticationFailureHandler
-
-	/** filterChainProxy */
-	filterChain.stripQueryStringFromUrls = true
 
 	// port mappings
 	portMapper.httpPort = 8080

@@ -29,6 +29,7 @@ import org.springframework.security.web.authentication.logout.LogoutFilter
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter
 import org.springframework.security.web.context.SecurityContextPersistenceFilter
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter
+import org.springframework.security.web.util.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean
 
 import test.TestRole
@@ -108,7 +109,7 @@ class SpringSecurityUtilsIntegrationTests extends GroovyTestCase {
 		assertEquals 9, map.size()
 		assertTrue map[410] instanceof DummyFilter
 
-		def filters = springSecurityFilterChain.filterChainMap['/**']
+		def filters = springSecurityFilterChain.filterChains[0].filters
 		assertTrue filters[0] instanceof SecurityContextPersistenceFilter
 		assertTrue filters[1] instanceof LogoutFilter
 		assertTrue filters[2] instanceof DummyFilter

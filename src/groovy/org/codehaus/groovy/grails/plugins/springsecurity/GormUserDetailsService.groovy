@@ -16,7 +16,7 @@ package org.codehaus.groovy.grails.plugins.springsecurity
 
 import org.apache.log4j.Logger
 import org.springframework.security.core.GrantedAuthority
-import org.springframework.security.core.authority.GrantedAuthorityImpl
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 
@@ -35,7 +35,7 @@ class GormUserDetailsService implements GrailsUserDetailsService {
 	 * we give a user with no granted roles this one which gets past that restriction but
 	 * doesn't grant anything.
 	 */
-	static final List NO_ROLES = [new GrantedAuthorityImpl(SpringSecurityUtils.NO_ROLE)]
+	static final List NO_ROLES = [new SimpleGrantedAuthority(SpringSecurityUtils.NO_ROLE)]
 
 	/** Dependency injection for the application. */
 	def grailsApplication
@@ -87,7 +87,7 @@ class GormUserDetailsService implements GrailsUserDetailsService {
 		String authorityPropertyName = conf.authority.nameField
 
 		Collection<?> userAuthorities = user."$authoritiesPropertyName"
-		def authorities = userAuthorities.collect { new GrantedAuthorityImpl(it."$authorityPropertyName") }
+		def authorities = userAuthorities.collect { new SimpleGrantedAuthority(it."$authorityPropertyName") }
 		authorities ?: NO_ROLES
 	}
 

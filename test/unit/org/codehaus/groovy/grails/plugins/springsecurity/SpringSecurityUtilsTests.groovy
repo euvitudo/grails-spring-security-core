@@ -20,11 +20,13 @@ import org.codehaus.groovy.grails.commons.ApplicationHolder as AH
 import org.codehaus.groovy.grails.commons.ConfigurationHolder as CH
 import org.springframework.context.ApplicationContext
 import org.springframework.mock.web.MockHttpServletRequest
+import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl
 import org.springframework.security.core.GrantedAuthority
-import org.springframework.security.core.authority.GrantedAuthorityImpl
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.web.PortResolverImpl
 import org.springframework.security.web.savedrequest.DefaultSavedRequest
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache
 
 /**
  * Unit tests for SpringSecurityUtils.
@@ -34,6 +36,7 @@ import org.springframework.security.web.savedrequest.DefaultSavedRequest
 class SpringSecurityUtilsTests extends GroovyTestCase {
 
 	private final application = new FakeApplication()
+	private final requestCache = new HttpSessionRequestCache()
 
 	/**
 	 * {@inheritDoc}
@@ -55,7 +58,7 @@ class SpringSecurityUtilsTests extends GroovyTestCase {
 		(1..10).each { i ->
 			String name = "role${i}"
 			roleNames << name
-			authorities << new GrantedAuthorityImpl(name)
+			authorities << new SimpleGrantedAuthority(name)
 		}
 
 		def roles = SpringSecurityUtils.authoritiesToRoles(authorities)
@@ -67,7 +70,7 @@ class SpringSecurityUtilsTests extends GroovyTestCase {
 	 */
 	void testAuthoritiesToRolesNullAuthority() {
 
-		def authorities = [new GrantedAuthorityImpl('role1'), new FakeAuthority()]
+		def authorities = [new SimpleGrantedAuthority('role1'), new FakeAuthority()]
 
 		shouldFail(IllegalArgumentException) {
 			SpringSecurityUtils.authoritiesToRoles(authorities)
@@ -95,7 +98,7 @@ class SpringSecurityUtilsTests extends GroovyTestCase {
 	void testGetPrincipalAuthorities() {
 		def authorities = []
 		(1..10).each { i ->
-			authorities << new GrantedAuthorityImpl("role${i}")
+			authorities << new SimpleGrantedAuthority("role${i}")
 		}
 
 		SecurityTestUtils.authenticate(null, null, authorities)
@@ -120,17 +123,17 @@ class SpringSecurityUtilsTests extends GroovyTestCase {
 	 * Test retainAll().
 	 */
 	void testRetainAll() {
-		def granted = [new GrantedAuthorityImpl('role1'),
-		               new GrantedAuthorityImpl('role2'),
-		               new GrantedAuthorityImpl('role3')]
-		def required = [new GrantedAuthorityImpl('role1')]
+		def granted = [new SimpleGrantedAuthority('role1'),
+		               new SimpleGrantedAuthority('role2'),
+		               new SimpleGrantedAuthority('role3')]
+		def required = [new SimpleGrantedAuthority('role1')]
 
 		def expected = ['role1']
 		assertSameContents expected, SpringSecurityUtils.retainAll(granted, required)
 	}
 
 	void testIsAjaxUsingParameterFalse() {
-		assertFalse SpringSecurityUtils.isAjax(new MockHttpServletRequest())
+		assertFalse SpringSecurityUtils.isAjax(requestCache, new MockHttpServletRequest(), new MockHttpServletResponse())
 	}
 
 	void testIsAjaxUsingParameterTrue() {
@@ -138,11 +141,11 @@ class SpringSecurityUtilsTests extends GroovyTestCase {
 		def request = new MockHttpServletRequest()
 		request.setParameter('ajax', 'true')
 
-		assertTrue SpringSecurityUtils.isAjax(request)
+		assertTrue SpringSecurityUtils.isAjax(requestCache, request, new MockHttpServletResponse())
 	}
 
 	void testIsAjaxUsingHeaderFalse() {
-		assertFalse SpringSecurityUtils.isAjax(new MockHttpServletRequest())
+		assertFalse SpringSecurityUtils.isAjax(requestCache, new MockHttpServletRequest(), new MockHttpServletResponse())
 	}
 
 	void testIsAjaxUsingHeaderTrue() {
@@ -150,26 +153,30 @@ class SpringSecurityUtilsTests extends GroovyTestCase {
 		def request = new MockHttpServletRequest()
 		request.addHeader('X-Requested-With', 'foo')
 
-		assertTrue SpringSecurityUtils.isAjax(request)
+		assertTrue SpringSecurityUtils.isAjax(requestCache, request, new MockHttpServletResponse())
 	}
 
 	void testIsAjaxUsingSavedRequestFalse() {
 
 		def request = new MockHttpServletRequest()
-		def savedRequest = new DefaultSavedRequest(request, new PortResolverImpl())
-		request.session.setAttribute(DefaultSavedRequest.SPRING_SECURITY_SAVED_REQUEST_KEY, savedRequest)
+		def response = new MockHttpServletResponse()
+//		def savedRequest = new DefaultSavedRequest(request, new PortResolverImpl())
+//		request.session.setAttribute(DefaultSavedRequest.SPRING_SECURITY_SAVED_REQUEST_KEY, savedRequest)
+		requestCache.saveRequest(request, response)
 
-		assertFalse SpringSecurityUtils.isAjax(request)
+		assertFalse SpringSecurityUtils.isAjax(requestCache, request, response)
 	}
 
 	void testIsAjaxUsingSavedRequestTrue() {
 
 		def request = new MockHttpServletRequest()
 		request.addHeader 'X-Requested-With', 'true'
-		def savedRequest = new DefaultSavedRequest(request, new PortResolverImpl())
-		request.session.setAttribute(DefaultSavedRequest.SPRING_SECURITY_SAVED_REQUEST_KEY, savedRequest)
-
-		assertTrue SpringSecurityUtils.isAjax(request)
+		def response = new MockHttpServletResponse()
+//		def savedRequest = new DefaultSavedRequest(request, new PortResolverImpl())
+//		request.session.setAttribute(DefaultSavedRequest.SPRING_SECURITY_SAVED_REQUEST_KEY, savedRequest)
+		requestCache.saveRequest(request, response)
+		
+		assertTrue SpringSecurityUtils.isAjax(requestCache, request, response)
 	}
 
 	void testIfAllGranted() {

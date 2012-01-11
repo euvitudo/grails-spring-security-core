@@ -19,7 +19,7 @@ import java.security.NoSuchAlgorithmException;
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.security.authentication.encoding.PasswordEncoder;
-import org.springframework.security.core.codec.Hex;
+import org.springframework.security.crypto.codec.Hex;
 import org.springframework.util.Assert;
 
 /**

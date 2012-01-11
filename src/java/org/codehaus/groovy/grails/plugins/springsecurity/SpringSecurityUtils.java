@@ -37,6 +37,7 @@ import java.util.TreeMap;
 
 import javax.servlet.Filter;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.codehaus.groovy.grails.commons.GrailsApplication;
@@ -44,7 +45,7 @@ import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.GrantedAuthorityImpl;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserCache;
@@ -55,7 +56,10 @@ import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
 import org.springframework.security.web.authentication.switchuser.SwitchUserGrantedAuthority;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
+import org.springframework.security.web.util.AnyRequestMatcher;
+import org.springframework.security.web.util.RequestMatcher;
 import org.springframework.util.StringUtils;
 
 /**
@@ -174,7 +178,7 @@ public final class SpringSecurityUtils {
 			return Collections.emptyList();
 		}
 
-		Collection<GrantedAuthority> authorities = authentication.getAuthorities();
+		Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
 		if (authorities == null) {
 			return Collections.emptyList();
 		}
@@ -200,7 +204,7 @@ public final class SpringSecurityUtils {
 		for (String auth : StringUtils.commaDelimitedListToStringArray(roleNames)) {
 			auth = auth.trim();
 			if (auth.length() > 0) {
-				requiredAuthorities.add(new GrantedAuthorityImpl(auth));
+				requiredAuthorities.add(new SimpleGrantedAuthority(auth));
 			}
 		}
 
@@ -226,7 +230,7 @@ public final class SpringSecurityUtils {
 	 * @return <code>true</code> if the user is authenticated and has all the roles
 	 */
 	public static boolean ifAllGranted(final String roles) {
-		Collection<GrantedAuthority> inferred = findInferredAuthorities(getPrincipalAuthorities());
+		Collection<? extends GrantedAuthority> inferred = findInferredAuthorities(getPrincipalAuthorities());
 		return inferred.containsAll(parseAuthoritiesString(roles));
 	}
 
@@ -236,7 +240,7 @@ public final class SpringSecurityUtils {
 	 * @return <code>true</code> if the user is authenticated and has none the roles
 	 */
 	public static boolean ifNotGranted(final String roles) {
-		Collection<GrantedAuthority> inferred = findInferredAuthorities(getPrincipalAuthorities());
+		Collection<? extends GrantedAuthority> inferred = findInferredAuthorities(getPrincipalAuthorities());
 		Set<String> grantedCopy = retainAll(inferred, parseAuthoritiesString(roles));
 		return grantedCopy.isEmpty();
 	}
@@ -247,7 +251,7 @@ public final class SpringSecurityUtils {
 	 * @return <code>true</code> if the user is authenticated and has any the roles
 	 */
 	public static boolean ifAnyGranted(final String roles) {
-		Collection<GrantedAuthority> inferred = findInferredAuthorities(getPrincipalAuthorities());
+		Collection<? extends GrantedAuthority> inferred = findInferredAuthorities(getPrincipalAuthorities());
 		Set<String> grantedCopy = retainAll(inferred, parseAuthoritiesString(roles));
 		return !grantedCopy.isEmpty();
 	}
@@ -297,9 +301,10 @@ public final class SpringSecurityUtils {
 	/**
 	 * Check if the request was triggered by an Ajax call.
 	 * @param request the request
+	 * @param request the request
 	 * @return <code>true</code> if Ajax
 	 */
-	public static boolean isAjax(final HttpServletRequest request) {
+	public static boolean isAjax(final RequestCache requestCache, final HttpServletRequest request, final HttpServletResponse response) {
 
 		String ajaxHeaderName = (String)ReflectionUtils.getConfigProperty("ajaxHeader");
 
@@ -314,7 +319,7 @@ public final class SpringSecurityUtils {
 		}
 
 		// check the SavedRequest's headers
-		SavedRequest savedRequest = (SavedRequest)request.getSession().getAttribute(WebAttributes.SAVED_REQUEST);
+		SavedRequest savedRequest = requestCache.getRequest(request, response);
 		if (savedRequest != null) {
 			return !savedRequest.getHeaderValues(ajaxHeaderName).isEmpty();
 		}
@@ -459,8 +464,8 @@ public final class SpringSecurityUtils {
 		Filter filter = getBean(beanName);
 		getConfiguredOrderedFilters().put(order, filter);
 		FilterChainProxy filterChain = getBean("springSecurityFilterChain");
-		filterChain.setFilterChainMap(Collections.singletonMap(
-				filterChain.getMatcher().getUniversalMatchPattern(),
+		filterChain.setFilterChainMap(Collections.<RequestMatcher, List<Filter>>singletonMap(
+				new AnyRequestMatcher(),
 				new ArrayList<Filter>(getConfiguredOrderedFilters().values())));
 	}
 
@@ -625,10 +630,10 @@ public final class SpringSecurityUtils {
 		return config;
 	}
 
-	private static Collection<GrantedAuthority> findInferredAuthorities(
+	private static Collection<? extends GrantedAuthority> findInferredAuthorities(
 			final Collection<GrantedAuthority> granted) {
 		RoleHierarchy roleHierarchy = getBean("roleHierarchy");
-		Collection<GrantedAuthority> reachable = roleHierarchy.getReachableGrantedAuthorities(granted);
+		Collection<? extends GrantedAuthority> reachable = roleHierarchy.getReachableGrantedAuthorities(granted);
 		if (reachable == null) {
 			return Collections.emptyList();
 		}

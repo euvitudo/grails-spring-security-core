@@ -39,7 +39,7 @@ public class AjaxAwareAuthenticationSuccessHandler extends SavedRequestAwareAuth
 	 */
 	@Override
 	protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response) {
-		if (SpringSecurityUtils.isAjax(request)) {
+		if (SpringSecurityUtils.isAjax(_requestCache, request, response)) {
 			return _ajaxSuccessUrl;
 		}
 		return super.determineTargetUrl(request, response);

@@ -27,7 +27,7 @@ import org.springframework.security.authentication.AuthenticationDetailsSource
 import org.springframework.security.authentication.TestingAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.AuthenticationException
-import org.springframework.security.core.authority.GrantedAuthorityImpl;
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder as SCH
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.core.userdetails.UserDetails
@@ -35,6 +35,7 @@ import org.springframework.security.core.userdetails.UserDetailsChecker
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.security.web.authentication.switchuser.SwitchUserFilter
+import org.springframework.security.web.authentication.switchuser.SwitchUserGrantedAuthority
 
 /**
  * Integration tests for <code>SecurityTagLib</code>.
@@ -47,7 +48,7 @@ class SecurityTagLibTests extends GroovyPagesTestCase {
 
 	boolean transactional = false
 
-	def springSecurityService
+//	def springSecurityService
 
 	/**
 	 * Test ifAllGranted().
@@ -216,7 +217,7 @@ class SecurityTagLibTests extends GroovyPagesTestCase {
 		filter.successHandler = [onAuthenticationSuccess: onAuthenticationSuccess] as AuthenticationSuccessHandler
 
 		def user = new User('somebody', 'password', true, true, true, true,
-				[new GrantedAuthorityImpl('ROLE_USER')])
+				[new SwitchUserGrantedAuthority('ROLE_USER', SCH.context.authentication)])
 		def loadUserByUsername = { String username -> user }
 		filter.userDetailsService = [loadUserByUsername: loadUserByUsername] as UserDetailsService
 		filter.userDetailsChecker = [check: { details -> }] as UserDetailsChecker

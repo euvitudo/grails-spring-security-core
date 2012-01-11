@@ -20,6 +20,7 @@ import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.security.authentication.TestingAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.web.RedirectStrategy
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache
 import org.springframework.security.web.savedrequest.RequestCache
 import org.springframework.security.web.savedrequest.SavedRequest
 
@@ -42,6 +43,7 @@ class AjaxAwareAuthenticationSuccessHandlerTests extends GroovyTestCase {
 		super.setUp()
 		_handler.defaultTargetUrl = DEFAULT_TARGET_URL
 		_handler.ajaxSuccessUrl = AJAX_SUCCESS_URL
+		_handler.requestCache = new HttpSessionRequestCache()
 
 		def config = new ConfigObject()
 		config.ajaxHeader = 'ajaxHeader'

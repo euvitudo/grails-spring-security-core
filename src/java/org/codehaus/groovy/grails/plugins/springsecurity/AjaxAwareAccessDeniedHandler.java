@@ -29,6 +29,7 @@ import org.springframework.security.web.PortResolver;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.util.Assert;
 
 /**
@@ -40,6 +41,7 @@ public class AjaxAwareAccessDeniedHandler implements AccessDeniedHandler, Initia
 	private String ajaxErrorPage;
 	private PortResolver portResolver;
 	private AuthenticationTrustResolver authenticationTrustResolver;
+	private RequestCache requestCache;
 
 	/**
 	 * {@inheritDoc}
@@ -53,14 +55,14 @@ public class AjaxAwareAccessDeniedHandler implements AccessDeniedHandler, Initia
 		if (e != null && isLoggedIn() && authenticationTrustResolver.isRememberMe(getAuthentication())) {
 			// user has a cookie but is getting bounced because of IS_AUTHENTICATED_FULLY,
 			// so Acegi won't save the original request
-			request.getSession().setAttribute(WebAttributes.SAVED_REQUEST, new DefaultSavedRequest(request, portResolver));
+			requestCache.saveRequest(request, response);
 		}
 
 		if (response.isCommitted()) {
 			return;
 		}
 
-		boolean ajaxError = ajaxErrorPage != null && SpringSecurityUtils.isAjax(request);
+		boolean ajaxError = ajaxErrorPage != null && SpringSecurityUtils.isAjax(requestCache, request, response);
 		if (errorPage == null && !ajaxError) {
 			response.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
 			return;
@@ -146,4 +148,14 @@ public class AjaxAwareAccessDeniedHandler implements AccessDeniedHandler, Initia
 		Assert.notNull(portResolver, "portResolver is required");
 		Assert.notNull(authenticationTrustResolver, "authenticationTrustResolver is required");
 	}
+	
+	/**
+	 * {@inheritDoc}
+	 * @see org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler#setRequestCache(
+	 * 	org.springframework.security.web.savedrequest.RequestCache)
+	 */
+	public void setRequestCache(RequestCache requestCache) {
+		this.requestCache = requestCache;
+	}
+
 }

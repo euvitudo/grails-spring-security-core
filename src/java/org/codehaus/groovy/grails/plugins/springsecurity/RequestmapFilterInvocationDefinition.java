@@ -17,10 +17,6 @@ package org.codehaus.groovy.grails.plugins.springsecurity;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.springframework.security.web.FilterInvocation;
-
 /**
  * @author <a href='mailto:burt@burtbeckwith.com'>Burt Beckwith</a>
  */
@@ -28,13 +24,13 @@ public class RequestmapFilterInvocationDefinition extends AbstractFilterInvocati
 
 	private boolean _initialized;
 
-	@Override
-	protected String determineUrl(final FilterInvocation filterInvocation) {
-		HttpServletRequest request = filterInvocation.getHttpRequest();
-		String requestUrl = request.getRequestURI().substring(request.getContextPath().length());
-		return lowercaseAndStripQuerystring(requestUrl);
-	}
-
+//	@Override
+//	protected String determineUrl(final FilterInvocation filterInvocation) {
+//		HttpServletRequest request = filterInvocation.getHttpRequest();
+//		String requestUrl = request.getRequestURI().substring(request.getContextPath().length());
+//		return lowercaseAndStripQuerystring(requestUrl);
+//	}
+//
 	@Override
 	protected void initialize() {
 		if (_initialized) {

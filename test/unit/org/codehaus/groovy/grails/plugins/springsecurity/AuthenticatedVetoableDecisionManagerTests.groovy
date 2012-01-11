@@ -23,7 +23,7 @@ import org.springframework.security.authentication.RememberMeAuthenticationToken
 import org.springframework.security.authentication.TestingAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.GrantedAuthority
-import org.springframework.security.core.authority.GrantedAuthorityImpl
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 
 /**
  * Unit tests for AuthenticatedVetoableDecisionManager.
@@ -82,7 +82,7 @@ class AuthenticatedVetoableDecisionManagerTests extends GroovyTestCase {
 	}
 
 	private List<GrantedAuthority> namesToAuthorities(roleNames) {
-		return roleNames.collect { new GrantedAuthorityImpl(it) }
+		return roleNames.collect { new SimpleGrantedAuthority(it) }
 	}
 
 	private createDefinition(roleNames) {

@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.ExceptionMappingAuthenticationFailureHandler;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.util.Assert;
 
 /**
@@ -33,6 +34,7 @@ import org.springframework.util.Assert;
 public class AjaxAwareAuthenticationFailureHandler extends ExceptionMappingAuthenticationFailureHandler implements InitializingBean {
 
 	private String _ajaxAuthenticationFailureUrl;
+	private RequestCache _requestCache;
 
 	/**
 	 * {@inheritDoc}
@@ -44,7 +46,7 @@ public class AjaxAwareAuthenticationFailureHandler extends ExceptionMappingAuthe
 	public void onAuthenticationFailure(final HttpServletRequest request, final HttpServletResponse response,
 			final AuthenticationException exception) throws IOException, ServletException {
 
-		if (SpringSecurityUtils.isAjax(request)) {
+		if (SpringSecurityUtils.isAjax(_requestCache, request, response)) {
 			saveException(request, exception);
 			getRedirectStrategy().sendRedirect(request, response, _ajaxAuthenticationFailureUrl);
 		}
@@ -68,4 +70,14 @@ public class AjaxAwareAuthenticationFailureHandler extends ExceptionMappingAuthe
 	public void afterPropertiesSet() {
 		Assert.notNull(_ajaxAuthenticationFailureUrl, "ajaxAuthenticationFailureUrl is required");
 	}
+	
+	/**
+	 * {@inheritDoc}
+	 * @see org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler#setRequestCache(
+	 * 	org.springframework.security.web.savedrequest.RequestCache)
+	 */
+	public void setRequestCache(RequestCache requestCache) {
+		_requestCache = requestCache;
+	}
+
 }

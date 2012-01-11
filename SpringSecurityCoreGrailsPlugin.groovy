@@ -76,8 +76,10 @@ import org.springframework.security.web.context.SecurityContextPersistenceFilter
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter
 import org.springframework.security.web.session.HttpSessionEventPublisher
-import org.springframework.security.web.util.AntUrlPathMatcher
-import org.springframework.security.web.util.RegexUrlPathMatcher
+import org.springframework.security.web.util.AntPathRequestMatcher;
+import org.springframework.security.web.util.AnyRequestMatcher;
+import org.springframework.security.web.util.RegexRequestMatcher
+import org.springframework.security.web.util.RequestMatcher;
 import org.springframework.web.filter.DelegatingFilterProxy
 
 import org.codehaus.groovy.grails.plugins.springsecurity.AjaxAwareAccessDeniedHandler
@@ -111,7 +113,7 @@ import org.codehaus.groovy.grails.plugins.springsecurity.WebExpressionVoter
  */
 class SpringSecurityCoreGrailsPlugin {
 
-	String version = '1.2.7'
+	String version = '1.2.8'
 	String grailsVersion = '1.2.2 > *'
 	List observe = ['controllers']
 	List loadAfter = ['controllers', 'services', 'hibernate']
@@ -284,6 +286,7 @@ class SpringSecurityCoreGrailsPlugin {
 			ajaxErrorPage = conf.adh.ajaxErrorPage
 			portResolver = ref('portResolver')
 			authenticationTrustResolver = ref('authenticationTrustResolver')
+			requestCache = ref('requestCache')
 		}
 
 		/** authenticationTrustResolver */
@@ -293,10 +296,11 @@ class SpringSecurityCoreGrailsPlugin {
 		}
 
 		// default 'authenticationEntryPoint'
-		authenticationEntryPoint(AjaxAwareAuthenticationEntryPoint) {
-			loginFormUrl = conf.auth.loginFormUrl // '/login/auth'
+		authenticationEntryPoint(AjaxAwareAuthenticationEntryPoint, conf.auth.loginFormUrl, ref('requestCache')) {
+//	        loginFormUrl = conf.auth.loginFormUrl // '/login/auth'
 			forceHttps = conf.auth.forceHttps // 'false'
 			ajaxLoginFormUrl = conf.auth.ajaxLoginFormUrl // '/login/authAjax'
+//			requestCache = ref('requestCache')
 			useForward = conf.auth.useForward // false
 			portMapper = ref('portMapper')
 			portResolver = ref('portResolver')
@@ -322,7 +326,10 @@ to default to 'Annotation'; setting value to 'Annotation'
 			securityConfigType = 'Annotation'
 		}
 
-		if (securityConfigType == 'Annotation') {
+		/*
+		 * FIXME
+		 */
+		if (securityConfigType == 'Annotation') { 
 			objectDefinitionSource(AnnotationFilterInvocationDefinition) {
 				application = ref('grailsApplication')
 				roleVoter = ref('roleVoter')
@@ -330,10 +337,10 @@ to default to 'Annotation'; setting value to 'Annotation'
 				expressionHandler = ref('webExpressionHandler')
 				boolean lowercase = conf.controllerAnnotations.lowercase // true
 				if ('ant'.equals(conf.controllerAnnotations.matcher)) {
-					urlMatcher = new AntUrlPathMatcher(lowercase)
+					requestMatcherClass = AntPathRequestMatcher
 				}
 				else {
-					urlMatcher = new RegexUrlPathMatcher(lowercase)
+					requestMatcherClass = RegexRequestMatcher
 				}
 				if (conf.rejectIfNoRule instanceof Boolean) {
 					rejectIfNoRule = conf.rejectIfNoRule
@@ -345,7 +352,7 @@ to default to 'Annotation'; setting value to 'Annotation'
 				roleVoter = ref('roleVoter')
 				authenticatedVoter = ref('authenticatedVoter')
 				expressionHandler = ref('webExpressionHandler')
-				urlMatcher = new AntUrlPathMatcher(true)
+				requestMatcherClass = AntPathRequestMatcher
 				if (conf.rejectIfNoRule instanceof Boolean) {
 					rejectIfNoRule = conf.rejectIfNoRule
 				}
@@ -356,7 +363,7 @@ to default to 'Annotation'; setting value to 'Annotation'
 				roleVoter = ref('roleVoter')
 				authenticatedVoter = ref('authenticatedVoter')
 				expressionHandler = ref('webExpressionHandler')
-				urlMatcher = new AntUrlPathMatcher(true)
+				requestMatcherClass = AntPathRequestMatcher
 				if (conf.rejectIfNoRule instanceof Boolean) {
 					rejectIfNoRule = conf.rejectIfNoRule
 				}
@@ -551,7 +558,7 @@ to default to 'Annotation'; setting value to 'Annotation'
 
 		// build filters here to give dependent plugins a chance to register some
 		def filterChain = ctx.springSecurityFilterChain
-		Map<String, List<Filter>> filterChainMap = [:]
+		Map<RequestMatcher, List<Filter>> filterChainMap = [:]
 
 		SortedMap<Integer, String> filterNames = findFilterChainNames(conf)
 		def allConfiguredFilters = [:]
@@ -591,7 +598,7 @@ to default to 'Annotation'; setting value to 'Annotation'
 			}
 		}
 		else {
-			filterChainMap[filterChain.matcher.universalMatchPattern] = new ArrayList(allConfiguredFilters.values()) // /**
+			filterChainMap[new AnyRequestMatcher()] = new ArrayList(allConfiguredFilters.values()) // /**
 		}
 
 		filterChain.filterChainMap = filterChainMap
@@ -807,9 +814,6 @@ to default to 'Annotation'; setting value to 'Annotation'
 
 	private configureFilterChain = { conf ->
 		springSecurityFilterChain(FilterChainProxy) {
-			filterChainMap = [:] // will be set in doWithApplicationContext
-			stripQueryStringFromUrls = conf.filterChain.stripQueryStringFromUrls // true
-			matcher = new AntUrlPathMatcher(true) // make into bean
 		}
 	}
 
@@ -916,7 +920,7 @@ to default to 'Annotation'; setting value to 'Annotation'
 		}
 
 		channelFilterInvocationSecurityMetadataSource(ChannelFilterInvocationSecurityMetadataSourceFactoryBean) {
-			urlMatcher = new AntUrlPathMatcher(true)
+			requestMatcherClass = AntPathRequestMatcher
 			definition = conf.secureChannel.definition
 		}
 		channelProcessingFilter(ChannelProcessingFilter) {
@@ -949,6 +953,7 @@ to default to 'Annotation'; setting value to 'Annotation'
 			useForward = conf.failureHandler.useForward // false
 			ajaxAuthenticationFailureUrl = conf.failureHandler.ajaxAuthFailUrl // '/login/authfail?ajax=true'
 			exceptionMappings = conf.failureHandler.exceptionMappings // [:]
+			requestCache = ref('requestCache')
 		}
 
 		authenticationProcessingFilter(RequestHolderAuthenticationFilter) {
@@ -967,12 +972,12 @@ to default to 'Annotation'; setting value to 'Annotation'
 		}
 
 		authenticationDetailsSource(WebAuthenticationDetailsSource) {
-			clazz = conf.authenticationDetails.authClass // WebAuthenticationDetails
+//			clazz = conf.authenticationDetails.authClass // WebAuthenticationDetails
 		}
 
 		requestCache(HttpSessionRequestCache) {
 			portResolver = ref('portResolver')
-			justUseSavedRequestOnGet = conf.requestCache.onlyOnGet // false
+//			justUseSavedRequestOnGet = conf.requestCache.onlyOnGet // false
 			createSessionAllowed = conf.requestCache.createSession // true
 		}
 

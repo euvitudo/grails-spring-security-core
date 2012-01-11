@@ -27,7 +27,7 @@ import org.springframework.security.access.vote.AuthenticatedVoter
 import org.springframework.security.access.vote.RoleVoter
 import org.springframework.security.web.FilterInvocation
 import org.springframework.security.web.access.expression.DefaultWebSecurityExpressionHandler
-import org.springframework.security.web.util.AntUrlPathMatcher
+import org.springframework.security.web.util.AntPathRequestMatcher;
 
 /**
  * @author <a href='mailto:burt@burtbeckwith.com'>Burt Beckwith</a>
@@ -45,17 +45,17 @@ class InterceptUrlMapFilterInvocationDefinitionTests extends GroovyTestCase {
 	protected void setUp() {
 		super.setUp()
 		ReflectionUtils.application = _application
-		_fid.urlMatcher = new AntUrlPathMatcher()
+		_fid.requestMatcherClass = AntPathRequestMatcher
 	}
 
 	void testAfterPropertiesSet() {
-		_fid.urlMatcher = null // simulate not having set it
+		_fid.requestMatcherClass = null // simulate not having set it
 
-		assertEquals 'url matcher is required', shouldFail(IllegalArgumentException) {
+		assertEquals 'requestMatcherClass is required', shouldFail(IllegalArgumentException) {
 			_fid.afterPropertiesSet()
 		}
 
-		_fid.urlMatcher = new AntUrlPathMatcher()
+		_fid.requestMatcherClass = AntPathRequestMatcher
 
 		_fid.afterPropertiesSet()
 	}
@@ -94,20 +94,6 @@ class InterceptUrlMapFilterInvocationDefinitionTests extends GroovyTestCase {
 		assertEquals 0, _fid.configAttributeMap.size()
 	}
 
-	void testDetermineUrl() {
-
-		def request = new MockHttpServletRequest()
-		def response = new MockHttpServletResponse()
-		def chain = new MockFilterChain()
-		request.contextPath = '/context'
-
-		request.requestURI = '/context/foo'
-		assertEquals '/foo', _fid.determineUrl(new FilterInvocation(request, response, chain))
-
-		request.requestURI = '/context/fOo/Bar?x=1&y=2'
-		assertEquals '/foo/bar', _fid.determineUrl(new FilterInvocation(request, response, chain))
-	}
-
 	void testSupports() {
 		assertTrue _fid.supports(FilterInvocation)
 	}
@@ -118,18 +104,19 @@ class InterceptUrlMapFilterInvocationDefinitionTests extends GroovyTestCase {
 		def chain = new MockFilterChain()
 		FilterInvocation filterInvocation = new FilterInvocation(request, response, chain)
 
-		def matcher = new AntUrlPathMatcher()
+		def matcher = AntPathRequestMatcher
 		MockInterceptUrlMapFilterInvocationDefinition fid
 
 		def initializeFid = {
 			fid = new MockInterceptUrlMapFilterInvocationDefinition()
-			fid.urlMatcher = matcher; fid.initialize()
+			fid.requestMatcherClass = matcher; fid.initialize()
 			WebUtils.storeGrailsWebRequest new GrailsWebRequest(request, response, new MockServletContext())
 			fid
 		}
 
 		def checkConfigAttributeForUrl = {config, String url ->
 			request.requestURI = url
+			request.servletPath = url
 			fid.url = url
 			assertEquals("Checking config for $url", config, fid.getAttributes(filterInvocation))
 		}
@@ -137,22 +124,22 @@ class InterceptUrlMapFilterInvocationDefinitionTests extends GroovyTestCase {
 		def configAttribute = [new SecurityConfig('ROLE_ADMIN'), new SecurityConfig('ROLE_SUPERUSER')]
 		def moreSpecificConfigAttribute = [new SecurityConfig('ROLE_SUPERUSER')]
 		fid = initializeFid()
-		fid.storeMapping matcher.compile('/secure/**'), configAttribute
-		fid.storeMapping matcher.compile('/secure/reallysecure/**'), moreSpecificConfigAttribute
+		fid.storeMapping '/secure/**', configAttribute
+		fid.storeMapping '/secure/reallysecure/**', moreSpecificConfigAttribute
 		checkConfigAttributeForUrl(configAttribute, '/secure/reallysecure/list')
 		checkConfigAttributeForUrl(configAttribute, '/secure/list')
 
 		fid = initializeFid()
-		fid.storeMapping matcher.compile('/secure/reallysecure/**'), moreSpecificConfigAttribute
-		fid.storeMapping matcher.compile('/secure/**'), configAttribute
+		fid.storeMapping '/secure/reallysecure/**', moreSpecificConfigAttribute
+		fid.storeMapping '/secure/**', configAttribute
 		checkConfigAttributeForUrl(moreSpecificConfigAttribute, '/secure/reallysecure/list')
 		checkConfigAttributeForUrl(configAttribute, '/secure/list')
 
 		fid = initializeFid()
 		configAttribute = [new SecurityConfig('IS_AUTHENTICATED_FULLY')]
 		moreSpecificConfigAttribute = [new SecurityConfig('IS_AUTHENTICATED_ANONYMOUSLY')]
-		fid.storeMapping matcher.compile('/unprotected/**'), moreSpecificConfigAttribute
-		fid.storeMapping matcher.compile('/**/*.jsp'), configAttribute
+		fid.storeMapping '/unprotected/**', moreSpecificConfigAttribute
+		fid.storeMapping '/**/*.jsp', configAttribute
 		checkConfigAttributeForUrl(moreSpecificConfigAttribute, '/unprotected/b.jsp')
 		checkConfigAttributeForUrl(moreSpecificConfigAttribute, '/unprotected/path')
 		checkConfigAttributeForUrl(moreSpecificConfigAttribute, '/unprotected/path/x.jsp')
