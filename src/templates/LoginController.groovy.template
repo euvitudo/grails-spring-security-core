@@ -1,5 +1,6 @@
 import grails.converters.JSON
 
+import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
@@ -109,7 +110,7 @@ class LoginController {
 			}
 		}
 
-		if (springSecurityService.isAjax(request)) {
+		if (springSecurityService.isAjax(request, response)) {
 			render([error: msg] as JSON)
 		}
 		else {

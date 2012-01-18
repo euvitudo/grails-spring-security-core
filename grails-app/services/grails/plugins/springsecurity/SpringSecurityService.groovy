@@ -15,11 +15,13 @@
 package grails.plugins.springsecurity
 
 import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse;
 
 import org.codehaus.groovy.grails.plugins.springsecurity.SpringSecurityUtils
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder as SCH
 import org.springframework.security.web.access.intercept.FilterInvocationSecurityMetadataSource
+import org.springframework.security.web.savedrequest.RequestCache;
 
 /**
  * Utility methods.
@@ -47,6 +49,9 @@ class SpringSecurityService {
 
 	/** dependency injection for userCache */
 	def userCache
+	
+	/** dependency injection for requestCache */
+	def requestCache
 
 	/**
 	 * Get the currently logged in user's principal. If not authenticated and the
@@ -195,8 +200,8 @@ class SpringSecurityService {
 	 * @param request the request
 	 * @return <code>true</code> if Ajax
 	 */
-	boolean isAjax(HttpServletRequest request) {
-		SpringSecurityUtils.isAjax request
+	boolean isAjax(HttpServletRequest request, HttpServletResponse response) {
+		SpringSecurityUtils.isAjax requestCache, request, response
 	}
 
 	private List findRequestmapsByRole(String roleName, domainClass, conf) {
